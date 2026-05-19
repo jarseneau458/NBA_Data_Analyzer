@@ -6,8 +6,7 @@ import pandas as pd
 class PlayerAnalyzer:
     def __init__(self, full_name):
         """
-         runs once when you create the object. It downloads the data
-        and stores it in memory so all the other functions can use it instantly.
+        downloads the data and stores it in memory so all the other functions can use it instantly.
         """
 
         self.full_name = full_name
