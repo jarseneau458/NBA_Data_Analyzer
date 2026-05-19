@@ -60,7 +60,7 @@ class PlayerAnalyzer:
         l5_under_rate = 100 - l5_over_rate
 
         return {
-            "Stat Category": stat_category.Upper(),
+            "Stats Category": stat_category.Upper(),
             "Prop Line": prop_line,
             "Season Over Hits": season_hits_over,
             "Season Under Hits": season_hits_under,
