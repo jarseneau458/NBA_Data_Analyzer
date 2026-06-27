@@ -1,20 +1,36 @@
 from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.static import players
 import pandas as pd
-
+from sqlalchemy import create_engine
+import time
+from dotenv import load_dotenv
+import os
 
 class PlayerAnalyzer:
     def __init__(self, full_name):
         """
-        downloads the data and stores it in memory so all the other functions can use it instantly.
+        Checks the database for the player's data, if not found, downloads the data from the NBA API.
+        Analyzes the player's season game log and last 10 and 5 games.
         """
+
 
         self.full_name = full_name
         self.player_id = players.find_players_by_full_name(full_name)[0]['id']
 
+        #check db for player
+        load_dotenv()
+        db_password = os.getenv("DB_PASSWORD")
+        db_url = f"postgresql+psycopg2://postgres:{db_password}@localhost:5432/nba_data"
+        engine = create_engine(db_url)
+        db_query = f'SELECT * FROM player_game_log WHERE "Player_ID" = {self.player_id}'
+        self.df = pd.read_sql(db_query, engine)
 
-        log = playergamelog.PlayerGameLog(self.player_id, season='2025-26')
-        self.df = log.get_data_frames()[0]
+        #gets player from nba_api
+        if len(self.df) ==0:
+            print("No data found in the database. Downloading data from NBA API.")
+            from nba_api.stats.endpoints import playergamelog
+            log = playergamelog.PlayerGameLog(self.player_id, season='2025-26')
+            self.df = log.get_data_frames()[0]
 
 
         self.last_10 = self.df.head(10)
@@ -42,8 +58,8 @@ class PlayerAnalyzer:
 
     def prop_line_analyzer(self, stat_category, prop_line):
         """Calculates the hit rate of a stat category based on the prop line."""
-        #adds up the hit rates 
-        season_hits_over = (self.df[stat_category] > prop_line).sum()
+        #adds up the hit rates
+        season_hits_over = self.df[stat_category].gt(prop_line).sum()
         season_hits_under = len(self.df) - season_hits_over
         l10_hits_over = (self.last_10[stat_category] > prop_line).sum()
         l10_hits_under = len(self.last_10) - l10_hits_over
@@ -74,6 +90,25 @@ class PlayerAnalyzer:
             "Last 5 Under Hits": l5_hits_under,
             "Last 5 Over Rate": l5_over_rate,
             "Last 5 Under Rate": l5_under_rate
+        }
+
+    def get_matchup_trends(self, opponent):
+        """ Calculates the trends of a player against another team."""
+
+        oppenent = opponent.upper()
+
+        matchup_df = self.df[self.df['MATCHUP'].str.contains(oppenent, na = False)]
+
+        if len(matchup_df) == 0:
+            return {"No matchups found for the given opponent."}
+
+        matchup_avgs = matchup_df[self.stats_tracked].mean().round(1).to_dict()
+
+        return {
+            "Opponent": oppenent,
+            "Games Played": len(matchup_df),
+            "Matchup Averages": matchup_avgs,
+            "Matchup Game Log": matchup_df.drop(columns=self.hidden_columns, errors='ignore')
         }
 
 
