@@ -10,7 +10,7 @@ class PlayerAnalyzer:
     def __init__(self, full_name):
         """
         Checks the database for the player's data, if not found, downloads the data from the NBA API.
-        Analyzes the player's season game log and last 10 and 5 games.
+        Analyzes the player's season game logs and last 10 and 5 games.
         """
 
 
@@ -28,7 +28,6 @@ class PlayerAnalyzer:
         #gets player from nba_api
         if len(self.df) ==0:
             print("No data found in the database. Downloading data from NBA API.")
-            from nba_api.stats.endpoints import playergamelog
             log = playergamelog.PlayerGameLog(self.player_id, season='2025-26')
             self.df = log.get_data_frames()[0]
 
@@ -76,7 +75,7 @@ class PlayerAnalyzer:
         l5_under_rate = 100 - l5_over_rate
 
         return {
-            "Stats Category": stat_category.Upper(),
+            "Stats Category": stat_category.upper(),
             "Prop Line": prop_line,
             "Season Over Hits": season_hits_over,
             "Season Under Hits": season_hits_under,

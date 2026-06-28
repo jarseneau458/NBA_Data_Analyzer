@@ -6,7 +6,7 @@ analyzer = PlayerAnalyzer("Jaylen Brown")
 opponent_input = input("\nEnter the 3-letter opponent abbreviation (e.g., NYK, LAL): ")
 matchup_data = analyzer.get_matchup_trends(opponent_input)
 
-print(f"\n--- CAREER VS {opponent_input.upper()} ---")
+print(f"\n--- 25-26 Season VS {opponent_input.upper()} ---")
 if "Error" in matchup_data:
     print(matchup_data["Error"])
 else:
