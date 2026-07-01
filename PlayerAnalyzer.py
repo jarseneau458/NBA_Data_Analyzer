@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import os
 
 class PlayerAnalyzer:
-    def __init__(self, full_name):
+    def __init__(self, full_name, season='2025-26',season_type='Regular Season'):
         """
         Checks the database for the player's data, if not found, downloads the data from the NBA API.
         Analyzes the player's season game logs and last 10 and 5 games.
@@ -17,18 +17,39 @@ class PlayerAnalyzer:
         self.full_name = full_name
         self.player_id = players.find_players_by_full_name(full_name)[0]['id']
 
+
+        #nba_api adds a number in front of the year to denote the category(ex. 2 is regaular season,
+        #3 is all star game
+        # 4 is playoffs
+        season_prefix = {
+            "Regular Season": "2",
+            "All Star": "3",
+            "Playoffs": "4"
+        }
+
+        prefix = season_prefix.get(season_type)
+        if prefix is None:
+            raise ValueError("Invalid season type. Please use 'Regular Season', 'All Star Game', or 'Playoffs'.")
+
+
+        #add the prefix and season together to get full id
+        season_id = prefix + season[:4]
+
+
+
+
         #check db for player
         load_dotenv()
         db_password = os.getenv("DB_PASSWORD")
         db_url = f"postgresql+psycopg2://postgres:{db_password}@localhost:5432/nba_data"
         engine = create_engine(db_url)
-        db_query = f'SELECT * FROM player_game_log WHERE "Player_ID" = {self.player_id}'
+        db_query = f'SELECT * FROM player_game_log WHERE "Player_ID" = {self.player_id} AND "SEASON_ID" = \'{season_id}\''
         self.df = pd.read_sql(db_query, engine)
 
         #gets player from nba_api
         if len(self.df) ==0:
             print("No data found in the database. Downloading data from NBA API.")
-            log = playergamelog.PlayerGameLog(self.player_id, season='2025-26')
+            log = playergamelog.PlayerGameLog(self.player_id, season=season, season_type_all_star=season_type)
             self.df = log.get_data_frames()[0]
 
 
@@ -58,21 +79,40 @@ class PlayerAnalyzer:
     def prop_line_analyzer(self, stat_category, prop_line):
         """Calculates the hit rate of a stat category based on the prop line."""
         #adds up the hit rates
-        season_hits_over = self.df[stat_category].gt(prop_line).sum()
-        season_hits_under = len(self.df) - season_hits_over
-        l10_hits_over = (self.last_10[stat_category] > prop_line).sum()
-        l10_hits_under = len(self.last_10) - l10_hits_over
-        l5_hits_over = (self.last_5[stat_category] > prop_line).sum()
-        l5_hits_under = len(self.last_5) - l5_hits_over
+        season_hits_over = int(self.df[stat_category].gt(prop_line).sum())
+        season_hits_under = int(len(self.df) - season_hits_over)
+        l10_hits_over = (int((self.last_10[stat_category] > prop_line).sum()))
+        l10_hits_under = int(len(self.last_10) - l10_hits_over)
+        l5_hits_over = int((self.last_5[stat_category] > prop_line).sum())
+        l5_hits_under = int(len(self.last_5) - l5_hits_over)
 
-        season_over_rate = round((season_hits_over / len(self.df))* 100, 2)
-        season_under_rate = 100 - season_over_rate
 
-        l10_over_rate = round((l10_hits_over / 10)* 100, 2)
-        l10_under_rate = 100 - l10_over_rate
+        total_games = len(self.df)
+        l10_games = len(self.last_10)
+        l5_games = len(self.last_5)
 
-        l5_over_rate = round((l5_hits_over / 5)* 100, 2)
-        l5_under_rate = 100 - l5_over_rate
+        # dosen't calculate up over/under rate if player has played 0 games
+        if total_games !=0:
+            season_over_rate = int(round((season_hits_over / len(self.df)) * 100, 2))
+            season_under_rate = 100 - season_over_rate
+        else:
+            season_over_rate = 0
+            season_under_rate = 0
+
+        if l10_games !=0:
+            l10_over_rate = int(round((l10_hits_over / 10) * 100, 2))
+            l10_under_rate = 100 - l10_over_rate
+        else:
+            l10_over_rate = 0
+            l10_under_rate = 0
+
+        if l5_games != 0:
+            l5_over_rate = int(round((l5_hits_over / 5) * 100, 2))
+            l5_under_rate = 100 - l5_over_rate
+        else:
+            l5_over_rate = 0
+            l5_under_rate = 0
+
 
         return {
             "Stats Category": stat_category.upper(),
@@ -111,7 +151,11 @@ class PlayerAnalyzer:
         }
 
 
-
+if __name__ == "__main__":
+    player = PlayerAnalyzer("Jaylen Brown")
+    print(player.get_trends())
+    print(player.prop_line_analyzer("PTS", 20))
+    print(player.get_matchup_trends("ATL"))
 
 
 
