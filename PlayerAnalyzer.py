@@ -4,6 +4,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 import time
 from dotenv import load_dotenv
+from utils import get_season_id
 import os
 
 class PlayerAnalyzer:
@@ -16,28 +17,7 @@ class PlayerAnalyzer:
 
         self.full_name = full_name
         self.player_id = players.find_players_by_full_name(full_name)[0]['id']
-
-
-        #nba_api adds a number in front of the year to denote the category(ex. 2 is regaular season,
-        #3 is all star game
-        # 4 is playoffs
-        season_prefix = {
-            "Regular Season": "2",
-            "All Star": "3",
-            "Playoffs": "4"
-        }
-
-        prefix = season_prefix.get(season_type)
-        if prefix is None:
-            raise ValueError("Invalid season type. Please use 'Regular Season', 'All Star Game', or 'Playoffs'.")
-
-
-        #add the prefix and season together to get full id
-        season_id = prefix + season[:4]
-
-
-
-
+        season_id = get_season_id(season, season_type)
         #check db for player
         load_dotenv()
         db_password = os.getenv("DB_PASSWORD")

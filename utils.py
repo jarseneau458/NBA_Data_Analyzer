@@ -20,3 +20,18 @@ def get_player_name_by_id(player_id):
             return f"Player with ID {player_id} not found"
     except Exception as e:
         return f" Error with ID {player_id}: {e}"
+
+def get_season_id(season, season_type):
+    season_prefix = {
+        "Regular Season": "2",
+        "All Star": "3",
+        "Playoffs": "4"
+    }
+
+    prefix = season_prefix.get(season_type)
+    if prefix is None:
+        raise ValueError("Invalid season type. Please use 'Regular Season', 'All Star Game', or 'Playoffs'.")
+    return (
+        #gets only the starting year numbers because nba database only stores the prefix plus the starting year nums
+        prefix + season[:4]
+    )

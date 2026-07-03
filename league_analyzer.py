@@ -1,55 +1,63 @@
-import os
 import pandas as pd
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from utils import get_player_name_by_id
+from nba_api.stats.endpoints import leagueleaders
 
-def get_league_leaders(min_games=40):
-    """
-    Calculate league leaders based on various statistics for players meeting a minimum
-    number of games played. The function connects to a database, retrieves player game
-    log data, filters players based on the minimum games requirement, calculates
-    averages for specified statistics, and identifies the players with the highest
-    average in each statistic.
-    """
-    load_dotenv()
-    db_password = os.getenv("DB_PASSWORD")
-    db_url = f"postgresql+psycopg2://postgres:{db_password}@localhost:5432/nba_data"
-    engine = create_engine(db_url)
 
-    df = pd.read_sql('SELECT * FROM player_game_log', engine)
-    if df.empty:
-        print("No data found in the database.")
+def get_league_leaders(min_games=40, season='2025-26', season_type='Regular Season'):
+    """
+    Fetches the pre-calculated league leaders directly from the NBA API.
+    Filters the results by a minimum games played threshold.
+    """
+
+    # Get the data directly from the NBA API's LeagueLeaders endpoint
+    try:
+        leaders = leagueleaders.LeagueLeaders(
+            season=season,
+            season_type_all_star=season_type,
+            stat_category_abbreviation='PTS'  # We just use PTS to pull the master table
+        )
+        df = leaders.get_data_frames()[0]
+    except Exception as e:
+        print(f"Error fetching data from NBA API: {e}")
         return {}
 
-    #filter players who meet the min games req
-    game_counts = df.groupby('Player_ID').size()
-    qualified_player_ids = game_counts[game_counts >= min_games].index
-    filtered_df = df[df['Player_ID'].isin(qualified_player_ids)]
+    if df.empty:
+        print("No data found.")
+        return {}
 
-    stats_to_track = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'FG3M', 'FG3A', 'FTM', 'FTA', 'FGA', 'FGM' ]
-    player_averages = filtered_df.groupby('Player_ID')[stats_to_track].mean()
+    # 2. Filter players who meet the minimum games requirement
+    filtered_df = df[df['GP'] >= min_games]
+
+    if filtered_df.empty:
+        print(f"No players found with at least {min_games} games played.")
+        return {}
+
+    stats_to_track = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'FG3M', 'FG3A', 'FTM', 'FTA', 'FGA', 'FGM']
 
     leaderboard = {}
 
-    #loops through each stat to find the player id with highest avg ands adds that player to the leaderboard dict
+    # 3. Loop through each stat to find the actual leader
     for stat in stats_to_track:
-        top_players = player_averages[stat].idxmax()
-        highest_averages = round(player_averages[stat].max(), 1)
 
-        #converts player id to thier name to add to dict
-        player_name = get_player_name_by_id(top_players)
+        #  divide the stat total by Games Played to get average .
+        per_game_col = f"{stat}_PER_GAME"
+        filtered_df[per_game_col] = filtered_df[stat] / filtered_df['GP']
+
+        # Find the index of the row with the maximum per-game average
+        leader_idx = filtered_df[per_game_col].idxmax()
+
+        # Extract the player's name and average
+        player_name = filtered_df.loc[leader_idx, 'PLAYER']
+        highest_average = round(filtered_df.loc[leader_idx, per_game_col], 1)
 
         leaderboard[stat] = {
-           "Player": player_name,
-            "Average": highest_averages
+            "Player": player_name,
+            "Average": highest_average
         }
 
     return leaderboard
 
 
 if __name__ == "__main__":
-
     leaders = get_league_leaders(min_games=10)
 
     print("\n--- LEAGUE LEADERS SUMMARY ---")
