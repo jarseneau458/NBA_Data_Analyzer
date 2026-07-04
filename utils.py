@@ -28,6 +28,7 @@ def get_season_id(season, season_type):
         "Playoffs": "4"
     }
 
+
     prefix = season_prefix.get(season_type)
     if prefix is None:
         raise ValueError("Invalid season type. Please use 'Regular Season', 'All Star Game', or 'Playoffs'.")
@@ -35,3 +36,22 @@ def get_season_id(season, season_type):
         #gets only the starting year numbers because nba database only stores the prefix plus the starting year nums
         prefix + season[:4]
     )
+
+
+def get_season_info():
+    """
+    Collects season information including season year and type from user input.
+    """
+    season = input("Enter the season (e.g., 2025-26): ").strip()
+    if not season:
+        season = '2025-26'
+
+    season_type_input = input("Enter season type (1. Regular Season, 2. Playoffs, 3. All Star): ").strip()
+    if season_type_input == '2':
+        season_type = 'Playoffs'
+    elif season_type_input == '3':
+        season_type = 'All Star Game'
+    else:
+        season_type = 'Regular Season'
+
+    return season, season_type

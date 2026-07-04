@@ -1,5 +1,5 @@
 from league_analyzer import get_league_leaders
-from db_updater import update_player_database
+from db_updater import update_player_database, update_custom_list, update_single_player
 from PlayerAnalyzer import PlayerAnalyzer
 
 
@@ -23,6 +23,8 @@ def main_menu():
             name = input("Enter player name: ")
             season, season_type = get_season_info()
             stat_category = input("Enter the stat category (e.g., PTS, REB, AST): ")
+
+
 
             try:
                 prop_line = float(input("Enter the prop line (ex. 20.5): "))
@@ -62,20 +64,24 @@ def main_menu():
                 print(f"{stat} Leader: {data['Player']} ({data['Average']} per game)")
 
         elif choice == "4":
-            try:
-                limit_input = int(input("Enter the number of players to update: "))
-            except ValueError:
-                print("Invalid number of players.")
-                continue
-
+            user_input = input(" Enter list of players to update (comma-separated): ")
             season, season_type = get_season_info()
+            player_list = []
 
-            print(f"Updating database for {limit_input} players...")
-            update_player_database(
-                max_players=limit_input,
-                season=season,
-                season_type=season_type
-            )
+            for name in user_input.split(","):
+                name_stripped = name.strip()
+                if name_stripped:
+                    player_list.append(name_stripped)
+
+            if player_list:
+                update_custom_list(player_list, season, season_type)
+                print(f"Successfully processed {len(player_list)} players in the database.")
+            else:
+                print("No players entered.")
+
+
+
+
 
         elif choice == "5":
             name = input("Enter Player Name: ")

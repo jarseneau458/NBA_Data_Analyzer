@@ -6,6 +6,7 @@ import time
 from dotenv import load_dotenv
 from utils import get_season_id
 import os
+import re
 
 class PlayerAnalyzer:
     def __init__(self, full_name, season='2025-26',season_type='Regular Season'):
@@ -38,7 +39,7 @@ class PlayerAnalyzer:
         self.stats_tracked = ['MIN', 'FGM', 'FGA', 'FG3M', 'FG3A', 'FTM', 'FTA',
                               'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS']
 
-        self.hidden_columns = ['SEASON_ID', 'PLAYER_ID', 'Player_ID', 'GAME_ID', 'Game_ID', 'VIDEO_AVAILABLE']
+        self.hidden_columns = ['SEASON_ID', 'PLAYER_ID', 'Player_ID', 'GAME_ID', 'VIDEO_AVAILABLE']
 
     def get_trends(self):
         """ Calculates player averages
@@ -50,14 +51,41 @@ class PlayerAnalyzer:
 
         return {
             "Season Averages": season_avgs,
+
+            "Last 10 Games": self.last_10.drop(columns=self.hidden_columns, errors='ignore', index = False),
             "Last 10 Averages": last_10_avgs,
-            "Last 10 Games": self.last_10.drop(columns=self.hidden_columns, errors='ignore'),
-            "Last 5 Averages": last_5_avgs,
-            "Last 5 Games": self.last_5.drop(columns=self.hidden_columns, errors='ignore')
+
+            "Last 5 Games": self.last_5.drop(columns=self.hidden_columns, errors='ignore', index=False),
+            "Last 5 Averages": last_5_avgs
         }
 
+    def get_simplifed_averages(self):
+        """ Calculates player averages
+        Returns Averages plus last 10 and 5 games stats while hiding unnecesary colunms"""
+
+        essential_stats = ['PTS', 'AST', 'REB', 'BLK', 'STL']
+        season_avgs = self.df[essential_stats].mean().round(1).to_dict()
+        last_10_avgs = self.last_10[essential_stats].mean().round(1).to_dict()
+        last_5_avgs = self.last_5[essential_stats].mean().round(1).to_dict()
+
+        return {
+            "Season Averages": season_avgs,
+            "Last 10 Averages": last_10_avgs,
+            "Last 5 Averages": last_5_avgs
+        }
+
+
     def prop_line_analyzer(self, stat_category, prop_line):
-        """Calculates the hit rate of a stat category based on the prop line."""
+        """Calculates the hit rate of a stat category based on the stat line."""
+
+        if self.df.empty:
+            return {"No data found for the given player."}
+        if stat_category not in self.stats_tracked:
+            return {f"{stat_category} is not a valid stat category."}
+
+        team_abbr= self.df["MATCHUP"].iloc[0].split(" ")[0]
+
+
         #adds up the hit rates
         season_hits_over = int(self.df[stat_category].gt(prop_line).sum())
         season_hits_under = int(len(self.df) - season_hits_over)
@@ -95,6 +123,8 @@ class PlayerAnalyzer:
 
 
         return {
+            "Name": self.full_name,
+            "Team": team_abbr,
             "Stats Category": stat_category.upper(),
             "Prop Line": prop_line,
             "Season Over Hits": season_hits_over,
@@ -133,9 +163,9 @@ class PlayerAnalyzer:
 
 if __name__ == "__main__":
     player = PlayerAnalyzer("Jaylen Brown")
-    print(player.get_trends())
-    print(player.prop_line_analyzer("PTS", 20))
-    print(player.get_matchup_trends("ATL"))
+    print("GENERAL AVERAGES:")
+    print(player.get_simplifed_averages())
+
 
 
 

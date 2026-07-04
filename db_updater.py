@@ -2,16 +2,18 @@ import time
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
+from sqlalchemy import text
 from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.static import players
+from utils import get_season_info
 
 
 def update_player_database(max_players=None, season='2025-26', season_type='Regular Season'):
     """
-    Updates the player database with game log data for active players in the NBA. The function retrieves the
-    active player list, optionally limits the number of players processed, fetches their game log data for
-    the specified season, and stores it in a database. It uses the NBA API and stores the logs in a
-    PostgreSQL database.
+    Updates the player database with game log data for active players in the NBA. The function completely wipes and repopulates
+    the database with new players. It retrieves the active player list, optionally limits the number of players processed,
+    fetches their game log data for the specified season, and stores it in a database.
+     It uses the NBA API and stores the logs in a PostgreSQL database
 
     """
     load_dotenv()
@@ -28,6 +30,9 @@ def update_player_database(max_players=None, season='2025-26', season_type='Regu
 
         df = first_log.get_data_frames()[0]
         df['Player_ID'] = first_player['id']
+
+        #uses replace because its the first player in the db
+        #every player added after, uses append
         df.to_sql('player_game_log', engine, if_exists='replace', index=False)
 
         time.sleep(3.5)
@@ -50,6 +55,11 @@ def update_player_database(max_players=None, season='2025-26', season_type='Regu
                 continue
 
             df["Player_ID"] = player_id
+
+            # Grabs season id from new data and delete any existing games for this player in this specific season before appending
+            season_id = df['SEASON_ID'].iloc[0]
+            with engine.begin() as conn:
+                conn.execute(text(f'DELETE FROM player_game_log WHERE "Player_ID" = {player_id} AND "SEASON_ID" = \'{season_id}\''))
             df.to_sql("player_game_log", engine, if_exists="append", index=False)
 
         except Exception as e:
@@ -74,6 +84,7 @@ def update_single_player(player_name,season='2025-26', season_type='Regular Seas
     db_url = f"postgresql+psycopg2://postgres:{db_password}@localhost:5432/nba_data"
     engine = create_engine(db_url)
 
+
     found_player = players.find_players_by_full_name(player_name)
     if not found_player:
         print(f"Player not found: {player_name}")
@@ -91,11 +102,20 @@ def update_single_player(player_name,season='2025-26', season_type='Regular Seas
             print(f"No data found for {full_name}.")
             return
         df['Player_ID'] = player_id
-        df.to_sql('player_game_log', engine, if_exists='replace', index = False)
+
+
+
+        # Grabs season id from new data and delete any existing games for this player in this specific season before appending
+        season_id = df['SEASON_ID'].iloc[0]
+        with engine.begin() as conn:
+            conn.execute(
+                text(f'DELETE FROM player_game_log WHERE "Player_ID" = {player_id} AND "SEASON_ID" = \'{season_id}\''))
+        df.to_sql('player_game_log', engine, if_exists='append', index = False)
         print(f"{full_name} is successfully updated.")
     except Exception as e:
         print(f"Error processing {full_name}: {e}")
 
 
-if __name__ == "__main__":
-    update_player_database(max_players=5)
+def update_custom_list(player_list, season, season_type):
+    for player in player_list:
+        update_single_player(player, season, season_type)
