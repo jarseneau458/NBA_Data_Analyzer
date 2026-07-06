@@ -1,12 +1,35 @@
-from nba_api.stats.endpoints import playergamelog
+from nba_api.stats.endpoints import playergamelog, playercareerstats
 from nba_api.stats.static import players
+
 import pandas as pd
 from sqlalchemy import create_engine
 import time
 from dotenv import load_dotenv
 from utils import get_season_id
 import os
-import re
+
+
+def get_player_seasons(player_name):
+
+    found_player = players.find_players_by_full_name(player_name)
+    if not found_player:
+        print(f"Player not found: {player_name}")
+        return []
+    player_id = found_player[0]['id']
+    try:
+        career = playercareerstats.PlayerCareerStats(player_id= player_id, timeout=30)
+        career_df = career.get_data_frames()[0]
+
+        seasons = career_df['SEASON_ID'].tolist()
+        seasons.reverse()
+        return seasons
+    except Exception as e:
+        print(f"Error processing {player_name}: {e}")
+
+        return []
+
+
+
 
 class PlayerAnalyzer:
     def __init__(self, full_name, season='2025-26',season_type='Regular Season'):
@@ -36,8 +59,7 @@ class PlayerAnalyzer:
 
         self.last_10 = self.df.head(10)
         self.last_5 = self.df.head(5)
-        self.stats_tracked = ['MIN', 'FGM', 'FGA', 'FG3M', 'FG3A', 'FTM', 'FTA',
-                              'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS']
+        self.stats_tracked = ['PTS', 'AST' ,'REB','OREB', 'DREB' , 'STL', 'BLK','MIN', 'FGM', 'FGA', 'FG3M', 'FG3A', 'FTM', 'FTA','TOV', 'PF' ]
 
         self.hidden_columns = ['SEASON_ID', 'PLAYER_ID', 'Player_ID', 'GAME_ID', 'VIDEO_AVAILABLE']
 
@@ -87,11 +109,11 @@ class PlayerAnalyzer:
 
 
         #adds up the hit rates
-        season_hits_over = int(self.df[stat_category].gt(prop_line).sum())
+        season_hits_over = int((self.df[stat_category]>=prop_line).sum())
         season_hits_under = int(len(self.df) - season_hits_over)
-        l10_hits_over = (int((self.last_10[stat_category] > prop_line).sum()))
+        l10_hits_over = (int((self.last_10[stat_category] >= prop_line).sum()))
         l10_hits_under = int(len(self.last_10) - l10_hits_over)
-        l5_hits_over = int((self.last_5[stat_category] > prop_line).sum())
+        l5_hits_over = int((self.last_5[stat_category] >= prop_line).sum())
         l5_hits_under = int(len(self.last_5) - l5_hits_over)
 
 
@@ -164,7 +186,7 @@ class PlayerAnalyzer:
 if __name__ == "__main__":
     player = PlayerAnalyzer("Jaylen Brown")
     print("GENERAL AVERAGES:")
-    print(player.get_simplifed_averages())
+    print(player.get_trends())
 
 
 
