@@ -23,7 +23,7 @@ st.markdown("<h2 style='text-align: center;'>Welcome to the NBA Data Analyzer</h
 st.markdown("<h3 style='text-align: center;'>Enter player name on the ""Player Search tab"" to get started</p>", unsafe_allow_html=True)
 
 st.sidebar.header("Player Search")
-player_name = st.sidebar.text_input("Enter player name:", value="")
+player_name = st.sidebar.text_input("Enter player name:", value="", key="player_name")
 
 avalible_seasons = []
 if player_name.strip():
@@ -75,9 +75,11 @@ if st.session_state.analyzer:
         line = st.number_input("Enter Prop Line", value=20.5, step=0.5, format="%.1f")
 
         if st.button("Run Prop Analylisis"):
-            result = pd.DataFrame([analyzer.prop_line_analyzer(stat, line)])
+            st.session_state.analyze_stat =  result = pd.DataFrame([analyzer.prop_line_analyzer(stat, line)])
 
 
+        if 'analyze_stat' in st.session_state:
+            result = st.session_state.analyze_stat
             st.write(f"### {result['Name'].iloc[0]} ({result['Team'].iloc[0]})")
             col1, col2 = st.columns(2)
             col1.metric("Season Over Rate", f"{result['Season Over Rate'].iloc[0]}%")
@@ -90,15 +92,15 @@ if st.session_state.analyzer:
 
 
             bars = alt.Chart(chart_df).mark_bar().encode(
-                x=alt.X('MATCHUP', title='Opponent', sort=alt.EncodingSortField(field='GAME_DATE', order='ascending')),
-                y=alt.Y(stat, title=stat),
-                tooltip=['GAME_DATE','MATCHUP' ,stat]
-            )
+                    x=alt.X('MATCHUP', title='Opponent', sort=alt.EncodingSortField(field='GAME_DATE', order='ascending')),
+                    y=alt.Y(stat, title=stat),
+                    tooltip=['GAME_DATE','MATCHUP' ,stat]
+                )
 
             threshold= (alt.Chart(pd.DataFrame({'threshold': [line]})).mark_rule(color='red', size =2, opacity = 0.8)
-            .encode(
-                y=alt.Y('threshold', title='Prop Line')
-            ))
+                .encode(
+                    y=alt.Y('threshold', title='Prop Line')
+                ))
             st.altair_chart(bars + threshold, use_container_width=True)
 
 
