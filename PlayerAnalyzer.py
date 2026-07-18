@@ -1,5 +1,5 @@
 from nba_api.stats.endpoints import playergamelog, playercareerstats
-from nba_api.stats.static import players
+from nba_api.stats.static import players, teams
 
 import pandas as pd
 from sqlalchemy import create_engine
@@ -182,11 +182,44 @@ class PlayerAnalyzer:
             "Matchup Game Log": matchup_df.drop(columns=self.hidden_columns, errors='ignore')
         }
 
+    def calculate_projections(self, stat_category, opponent):
+        """ Calculates the projections of a player against another team."""
+        if self.df.empty:
+            return {"No data found for the given player."}
+        if stat_category not in self.stats_tracked:
+            return {f"{stat_category} is not a valid stat category."}
+        season_avgs = self.df[stat_category].mean()
+
+        l5_avgs = self.last_5[stat_category].mean()
+
+        opponent_upper = opponent.upper()
+        matchup_df = self.df[self.df['MATCHUP'].str.contains(opponent_upper, na = False)]
+
+        if len(matchup_df) > 0:
+            matchup_avgs = matchup_df[stat_category].mean()
+            stat_projection = (season_avgs * .50) + (matchup_avgs * .20) + (l5_avgs * .30)
+            used_matchup_data = True
+        else:
+            matchup_avgs = 0
+            stat_projection = (season_avgs * .60) + (l5_avgs * .40)
+            used_matchup_data = False
+        return {
+            "Opponent": opponent,
+            "Projections": float(round(stat_projection,1)),
+            "Season Averages": float(round(season_avgs, 1)),
+            "Last 5 Averages": float(round(l5_avgs,1)),
+            "Matchup Avg": float(round(matchup_avgs, 1)) if used_matchup_data else "N/A",
+            "Matchup Games Played": len(matchup_df)
+            }
+
+
+
+
 
 if __name__ == "__main__":
     player = PlayerAnalyzer("Jaylen Brown")
-    print("GENERAL AVERAGES:")
-    print(player.get_trends())
+    player.calculate_projections("PTS", "LA Clippers")
+    print(player.calculate_projections("PTS", "LA Clippers"))
 
 
 

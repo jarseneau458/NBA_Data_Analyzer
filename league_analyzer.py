@@ -35,7 +35,7 @@ def get_league_leaders(min_games=40, season='2025-26', season_type='Regular Seas
 
     leaderboard = {}
 
-    # 3. Loop through each stat to find the actual leader
+    #  Loop through each stat to find the actual leader
     for stat in stats_to_track:
 
         #  divide the stat total by Games Played to get average .
