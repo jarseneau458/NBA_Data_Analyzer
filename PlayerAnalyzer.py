@@ -7,6 +7,7 @@ import time
 from dotenv import load_dotenv
 from utils import get_season_id
 import os
+import BaseAnalyzer
 
 
 def get_player_seasons(player_name):
@@ -31,7 +32,7 @@ def get_player_seasons(player_name):
 
 
 
-class PlayerAnalyzer:
+class PlayerAnalyzer(BaseAnalyzer):
     def __init__(self, full_name, season='2025-26',season_type='Regular Season'):
         """
         Checks the database for the player's data, if not found, downloads the data from the NBA API.
@@ -61,7 +62,7 @@ class PlayerAnalyzer:
         self.last_5 = self.df.head(5)
         self.stats_tracked = ['PTS', 'AST' ,'REB','OREB', 'DREB' , 'STL', 'BLK','MIN', 'FGM', 'FGA', 'FG3M', 'FG3A', 'FTM', 'FTA','TOV', 'PF' ]
 
-        self.hidden_columns = ['SEASON_ID', 'PLAYER_ID', 'Player_ID', 'GAME_ID', 'VIDEO_AVAILABLE']
+        self.hidden_columns = ['SEASON_ID', 'PLAYER_ID', 'GAME_ID', 'VIDEO_AVAILABLE']
 
     def get_trends(self):
         """ Calculates player averages
@@ -163,54 +164,9 @@ class PlayerAnalyzer:
             "Last 5 Under Rate": l5_under_rate
         }
 
-    def get_matchup_trends(self, opponent):
-        """ Calculates the trends of a player against another team."""
 
-        oppenent = opponent.upper()
 
-        matchup_df = self.df[self.df['MATCHUP'].str.contains(oppenent, na = False)]
 
-        if len(matchup_df) == 0:
-            return {"No matchups found for the given opponent."}
-
-        matchup_avgs = matchup_df[self.stats_tracked].mean().round(1).to_dict()
-
-        return {
-            "Opponent": oppenent,
-            "Games Played": len(matchup_df),
-            "Matchup Averages": matchup_avgs,
-            "Matchup Game Log": matchup_df.drop(columns=self.hidden_columns, errors='ignore')
-        }
-
-    def calculate_projections(self, stat_category, opponent):
-        """ Calculates the projections of a player against another team."""
-        if self.df.empty:
-            return {"No data found for the given player."}
-        if stat_category not in self.stats_tracked:
-            return {f"{stat_category} is not a valid stat category."}
-        season_avgs = self.df[stat_category].mean()
-
-        l5_avgs = self.last_5[stat_category].mean()
-
-        opponent_upper = opponent.upper()
-        matchup_df = self.df[self.df['MATCHUP'].str.contains(opponent_upper, na = False)]
-
-        if len(matchup_df) > 0:
-            matchup_avgs = matchup_df[stat_category].mean()
-            stat_projection = (season_avgs * .50) + (matchup_avgs * .20) + (l5_avgs * .30)
-            used_matchup_data = True
-        else:
-            matchup_avgs = 0
-            stat_projection = (season_avgs * .60) + (l5_avgs * .40)
-            used_matchup_data = False
-        return {
-            "Opponent": opponent,
-            "Projections": float(round(stat_projection,1)),
-            "Season Averages": float(round(season_avgs, 1)),
-            "Last 5 Averages": float(round(l5_avgs,1)),
-            "Matchup Avg": float(round(matchup_avgs, 1)) if used_matchup_data else "N/A",
-            "Matchup Games Played": len(matchup_df)
-            }
 
 
 
