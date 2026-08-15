@@ -7,30 +7,7 @@ import time
 from dotenv import load_dotenv
 from utils import get_season_id
 import os
-import BaseAnalyzer
-
-
-def get_player_seasons(player_name):
-
-    found_player = players.find_players_by_full_name(player_name)
-    if not found_player:
-        print(f"Player not found: {player_name}")
-        return []
-    player_id = found_player[0]['id']
-    try:
-        career = playercareerstats.PlayerCareerStats(player_id= player_id, timeout=30)
-        career_df = career.get_data_frames()[0]
-
-        seasons = career_df['SEASON_ID'].tolist()
-        seasons.reverse()
-        return seasons
-    except Exception as e:
-        print(f"Error processing {player_name}: {e}")
-
-        return []
-
-
-
+from BaseAnalyzer import BaseAnalyzer
 
 class PlayerAnalyzer(BaseAnalyzer):
     def __init__(self, full_name, season='2025-26',season_type='Regular Season'):
