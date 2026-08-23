@@ -2,17 +2,17 @@ from nba_api.stats.endpoints import playergamelog, playercareerstats
 from nba_api.stats.static import players, teams
 
 import pandas as pd
-from sqlalchemy import create_engine
-import time
-from dotenv import load_dotenv
+
+
+
 from utils import get_season_id
-import os
+
 from BaseAnalyzer import BaseAnalyzer
 
 class PlayerAnalyzer(BaseAnalyzer):
     def __init__(self, full_name, season='2025-26',season_type='Regular Season'):
         """
-        Checks the database for the player's data, if not found, downloads the data from the NBA API.
+        Downloads the data from the NBA API.
         Analyzes the player's season game logs and last 10 and 5 games.
         """
 
@@ -20,19 +20,12 @@ class PlayerAnalyzer(BaseAnalyzer):
         self.full_name = full_name
         self.player_id = players.find_players_by_full_name(full_name)[0]['id']
         season_id = get_season_id(season, season_type)
-        #check db for player
-        load_dotenv()
-        db_password = os.getenv("DB_PASSWORD")
-        db_url = f"postgresql+psycopg2://postgres:{db_password}@localhost:5432/nba_data"
-        engine = create_engine(db_url)
-        db_query = f'SELECT * FROM player_game_log WHERE "Player_ID" = {self.player_id} AND "SEASON_ID" = \'{season_id}\''
-        self.df = pd.read_sql(db_query, engine)
+
 
         #gets player from nba_api
-        if len(self.df) ==0:
-            print("No data found in the database. Downloading data from NBA API.")
-            log = playergamelog.PlayerGameLog(self.player_id, season=season, season_type_all_star=season_type)
-            self.df = log.get_data_frames()[0]
+
+        log = playergamelog.PlayerGameLog(self.player_id, season=season, season_type_all_star=season_type)
+        self.df = log.get_data_frames()[0]
 
 
         self.last_10 = self.df.head(10)
@@ -75,71 +68,7 @@ class PlayerAnalyzer(BaseAnalyzer):
         }
 
 
-    def prop_line_analyzer(self, stat_category, prop_line):
-        """Calculates the hit rate of a stat category based on the stat line."""
 
-        if self.df.empty:
-            return {"No data found for the given player."}
-        if stat_category not in self.stats_tracked:
-            return {f"{stat_category} is not a valid stat category."}
-
-        team_abbr= self.df["MATCHUP"].iloc[0].split(" ")[0]
-
-
-        #adds up the hit rates
-        season_hits_over = int((self.df[stat_category]>=prop_line).sum())
-        season_hits_under = int(len(self.df) - season_hits_over)
-        l10_hits_over = (int((self.last_10[stat_category] >= prop_line).sum()))
-        l10_hits_under = int(len(self.last_10) - l10_hits_over)
-        l5_hits_over = int((self.last_5[stat_category] >= prop_line).sum())
-        l5_hits_under = int(len(self.last_5) - l5_hits_over)
-
-
-        total_games = len(self.df)
-        l10_games = len(self.last_10)
-        l5_games = len(self.last_5)
-
-        # dosen't calculate up over/under rate if player has played 0 games
-        if total_games !=0:
-            season_over_rate = int(round((season_hits_over / len(self.df)) * 100, 2))
-            season_under_rate = 100 - season_over_rate
-        else:
-            season_over_rate = 0
-            season_under_rate = 0
-
-        if l10_games !=0:
-            l10_over_rate = int(round((l10_hits_over / 10) * 100, 2))
-            l10_under_rate = 100 - l10_over_rate
-        else:
-            l10_over_rate = 0
-            l10_under_rate = 0
-
-        if l5_games != 0:
-            l5_over_rate = int(round((l5_hits_over / 5) * 100, 2))
-            l5_under_rate = 100 - l5_over_rate
-        else:
-            l5_over_rate = 0
-            l5_under_rate = 0
-
-
-        return {
-            "Name": self.full_name,
-            "Team": team_abbr,
-            "Stats Category": stat_category.upper(),
-            "Prop Line": prop_line,
-            "Season Over Hits": season_hits_over,
-            "Season Under Hits": season_hits_under,
-            "Season Over Rate": season_over_rate,
-            "Season Under Rate": season_under_rate,
-            "Last 10 Over Hits": l10_hits_over,
-            "Last 10 Under Hits": l10_hits_under,
-            "Last 10 Over Rate": l10_over_rate,
-            "Last 10 Under Rate": l10_under_rate,
-            "Last 5 Over Hits": l5_hits_over,
-            "Last 5 Under Hits": l5_hits_under,
-            "Last 5 Over Rate": l5_over_rate,
-            "Last 5 Under Rate": l5_under_rate
-        }
 
 
 

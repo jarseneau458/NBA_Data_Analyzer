@@ -1,5 +1,5 @@
 from league_analyzer import get_league_leaders
-from db_updater import update_player_database, update_custom_list, update_single_player
+#from db_updater import update_player_database, update_custom_list, update_single_player
 from PlayerAnalyzer import PlayerAnalyzer
 
 
@@ -13,9 +13,7 @@ def main_menu():
         print("1. Analyze Player Prop Line")
         print("2. Get Player Trends & Matchups")
         print("3. Get League Leaders")
-        print("4. Update Database (League/Batch)")
-        print("5. Update Database (Single Player)")
-        print("6. Exit")
+        print("4. Exit")
 
         choice = input("Enter your choice: ")
 
@@ -64,37 +62,6 @@ def main_menu():
                 print(f"{stat} Leader: {data['Player']} ({data['Average']} per game)")
 
         elif choice == "4":
-            user_input = input(" Enter list of players to update (comma-separated): ")
-            season, season_type = get_season_info()
-            player_list = []
-
-            for name in user_input.split(","):
-                name_stripped = name.strip()
-                if name_stripped:
-                    player_list.append(name_stripped)
-
-            if player_list:
-                update_custom_list(player_list, season, season_type)
-                print(f"Successfully processed {len(player_list)} players in the database.")
-            else:
-                print("No players entered.")
-
-
-
-
-
-        elif choice == "5":
-            name = input("Enter Player Name: ")
-            season, season_type = get_season_info()
-
-            print(f"Updating {name}...")
-            update_player_database(
-                name,
-                season=season,
-                season_type=season_type
-            )
-
-        elif choice == "6":
             print("Exiting...")
             break
 

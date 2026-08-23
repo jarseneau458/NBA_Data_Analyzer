@@ -7,7 +7,7 @@ from BaseAnalyzer import BaseAnalyzer
 
 class TeamAnalyzer(BaseAnalyzer):
     def __init__(self, team_name, season, season_type):
-        self.team_name = team_name
+        self.full_name = team_name
         self.team_id = find_teams_by_full_name(team_name)[0]['id']
         self.season = season
         self.season_type = season_type
@@ -18,6 +18,10 @@ class TeamAnalyzer(BaseAnalyzer):
 
         log = teamgamelog.TeamGameLog(team_id=self.team_id, season=self.season, season_type_all_star=self.season_type)
         self.df = log.get_data_frames()[0]
+        self.last_10 = self.df.head(10)
+        self.last_5 = self.df.head(5)
+
+
         self.hidden_columns = ['SEASON_ID', 'Team_ID', 'Game_ID', 'W', 'L', 'W_PCT', 'VIDEO_AVAILABLE', 'MIN']
 
     def get_team_stats(self):
@@ -34,7 +38,7 @@ class TeamAnalyzer(BaseAnalyzer):
         team_stats_df = round((team_stats_df / total_games), 1)
 
         return {
-            "Team Name": self.team_name,
+            "Team Name": self.full_name,
             "Team Record": team_record.to_dict(orient='records'),
             "Stats": team_stats_df.to_dict(orient='records'),
             "Advanced Stats": advanced_team_stats_df.to_dict(orient='records'),
