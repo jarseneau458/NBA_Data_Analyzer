@@ -35,14 +35,15 @@ def get_league_leaders(min_games=40, season='2025-26', season_type='Regular Seas
 
     leaderboard = {}
 
-    #  Loop through each stat to find the actual leader
+
     for stat in stats_to_track:
 
-        #  divide the stat total by Games Played to get average .
+
         per_game_col = f"{stat}_PER_GAME"
+        #  divide the stat total by Games Played to get average.
         filtered_df[per_game_col] = filtered_df[stat] / filtered_df['GP']
 
-        # Find the index of the row with the maximum per game average
+        # Finds the index of the row with the maximum per game average
         leader_idx = filtered_df[per_game_col].idxmax()
 
         # Extract the player's name and average
