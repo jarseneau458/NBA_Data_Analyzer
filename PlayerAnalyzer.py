@@ -1,25 +1,20 @@
-from nba_api.stats.endpoints import playergamelog, playercareerstats
-from nba_api.stats.static import players, teams
-
-import pandas as pd
-
-
-
-from utils import get_season_id
+from nba_api.stats.endpoints import playergamelog
+from nba_api.stats.static import players
 
 from BaseAnalyzer import BaseAnalyzer
 
+
 class PlayerAnalyzer(BaseAnalyzer):
-    def __init__(self, full_name, season='2025-26',season_type='Regular Season'):
+    def __init__(self, full_name, season='2025-26', season_type='Regular Season'):
         """
         Downloads the data from the NBA API.
         Analyzes the player's season game logs and last 10 and 5 games.
         """
 
-
+        super().__init__()
         self.full_name = full_name
         self.player_id = players.find_players_by_full_name(full_name)[0]['id']
-        season_id = get_season_id(season, season_type)
+        #season_id = get_season_id(season, season_type)
 
 
         #gets player from nba_api

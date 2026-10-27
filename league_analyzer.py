@@ -1,8 +1,7 @@
-import pandas as pd
 from nba_api.stats.endpoints import leagueleaders
 
 
-def get_league_leaders(min_games=40, season='2025-26', season_type='Regular Season'):
+def get_league_leaders(min_games=0, season='2025-26', season_type='Regular Season'):
     """
     Fetches the pre-calculated league leaders directly from the NBA API.
     Filters the results by a minimum games played threshold.
@@ -59,8 +58,8 @@ def get_league_leaders(min_games=40, season='2025-26', season_type='Regular Seas
 
 
 if __name__ == "__main__":
-    leaders = get_league_leaders(min_games=10)
+    leaders_test = get_league_leaders(min_games=10)
 
     print("\n--- LEAGUE LEADERS SUMMARY ---")
-    for stat, data in leaders.items():
-        print(f"{stat} Leader: {data['Player']} ({data['Average']} per game)")
+    for stat_test, data in leaders_test.items():
+        print(f"{stat_test} Leader: {data['Player']} ({data['Average']} per game)")

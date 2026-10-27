@@ -1,12 +1,12 @@
-from nba_api.stats.static import teams
-import pandas as pd
-from nba_api.stats.static.teams import find_teams_by_full_name
 from nba_api.stats.endpoints import TeamDashboardByGeneralSplits, teamgamelog
+from nba_api.stats.static.teams import find_teams_by_full_name
+
 from BaseAnalyzer import BaseAnalyzer
 
 
 class TeamAnalyzer(BaseAnalyzer):
     def __init__(self, team_name, season, season_type):
+        super().__init__()
         self.full_name = team_name
         self.team_id = find_teams_by_full_name(team_name)[0]['id']
         self.season = season

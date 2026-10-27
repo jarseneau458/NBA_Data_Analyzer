@@ -1,8 +1,14 @@
-
 from nba_api.stats.static.teams import find_teams_by_full_name
 
 #Stores methods used by both PlayerAnalyzer and TeamAnalyzer
 class BaseAnalyzer:
+    def __init__(self):
+        self.df = None
+        self.last_10 = None
+        self.last_5 = None
+        self.stats_tracked = None
+        self.hidden_columns = None
+        self.full_name = None
 
     def get_matchup_trends(self, opponent):
         opponent = find_teams_by_full_name(opponent)[0]['abbreviation']
