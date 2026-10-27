@@ -40,10 +40,10 @@ if st.sidebar.button("Analyze"):
 
             if team_search:
                 st.session_state.analyzer = TeamAnalyzer(search_query, season, season_type)
-                st.success(f"Loaded {search_query}'s data successfully!")
+                st.sidebar.success(f"Loaded {search_query}'s data successfully!")
             elif player_search:
                 st.session_state.analyzer = PlayerAnalyzer(search_query, season, season_type)
-                st.success(f"Loaded {search_query}'s data successfully!")
+                st.sidebar.success(f"Loaded {search_query}'s data successfully!")
             else:
                 st.error(f"No player or team found with the name: {search_query}")
     except Exception as e:
@@ -61,8 +61,6 @@ if st.session_state.analyzer:
 
     with tab1:
        render_trends_tabs(trends, analyzer, search_query, season, season_type)
-
-
 
     with tab2:
         render_prop_line_analyzer(analyzer)
